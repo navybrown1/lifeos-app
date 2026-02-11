@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "parse:doc": "node scripts/parse-document.js"
+    "validate": "node scripts/validate-pipeline.js"
   },
   "dependencies": {
     "next": "14.2.18",

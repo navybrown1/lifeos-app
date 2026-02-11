@@ -463,7 +463,7 @@ function RequirementsTab({ data }: { data: ExtractedData }) {
   const filtered =
     filter.length > 0 ? data.requirements.filter((r) => filter.includes(r.type)) : data.requirements;
 
-  const exportChecklist = () => {
+  const exportChecklist = (format: "csv" | "json") => {
     const rows = filtered.map((r) => ({
       text: r.text,
       type: r.type,
@@ -472,24 +472,32 @@ function RequirementsTab({ data }: { data: ExtractedData }) {
       rationale: `Section: ${r.section}`,
       verification: "Manual review",
     }));
-    const csv = [
-      "Text,Type,Section,Priority,Rationale,Verification",
-      ...rows.map((r) =>
-        [
-          `"${r.text.replace(/"/g, '""')}"`,
-          r.type,
-          r.section,
-          r.priority,
-          r.rationale,
-          r.verification,
-        ].join(",")
-      ),
-    ].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "requirements-checklist.csv";
-    a.click();
+    if (format === "json") {
+      const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "requirements-checklist.json";
+      a.click();
+    } else {
+      const csv = [
+        "Text,Type,Section,Priority,Rationale,Verification",
+        ...rows.map((r) =>
+          [
+            `"${r.text.replace(/"/g, '""')}"`,
+            r.type,
+            r.section,
+            r.priority,
+            r.rationale,
+            r.verification,
+          ].join(",")
+        ),
+      ].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "requirements-checklist.csv";
+      a.click();
+    }
   };
 
   return (
@@ -511,9 +519,14 @@ function RequirementsTab({ data }: { data: ExtractedData }) {
             </button>
           ))}
         </div>
-        <Button variant="outline" size="sm" onClick={exportChecklist}>
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => exportChecklist("csv")}>
+            Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => exportChecklist("json")}>
+            Export JSON
+          </Button>
+        </div>
       </div>
       <div className="space-y-4">
         {filtered.map((r, i) => (

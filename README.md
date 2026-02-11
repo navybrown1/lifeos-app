@@ -43,9 +43,13 @@ Supported formats: **DOCX**, **PDF**, **TXT**.
 
 ## Export Options
 
-- **Entities**: CSV via command palette or Entities tab
+- **Entities**: CSV via command palette
 - **Requirements checklist**: CSV via Requirements tab or command palette
 - **Analysis summary**: JSON via command palette
+
+## Screenshots
+
+Run the app, then capture screens of each tab. Example: `Overview` shows executive summary and key takeaways; `Entities & Relationships` shows the entity table and relationship graph.
 
 ## Tech Stack
 
