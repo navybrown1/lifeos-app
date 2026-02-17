@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 :root {
   --background: 0 0% 98%;
@@ -29,4 +30,19 @@
 body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.lifeos-blob-a,
+.lifeos-blob-b {
+  will-change: transform;
+  pointer-events: none;
+}
+
+.lifeos-grid {
+  background-image:
+    linear-gradient(to right, rgba(100, 116, 139, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(100, 116, 139, 0.08) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at center, black 18%, transparent 82%);
 }
