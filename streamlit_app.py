@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import os
+import shutil
 import subprocess
 import time
 import urllib.error
@@ -14,8 +15,24 @@ import streamlit.components.v1 as components
 
 
 APP_ROOT = Path(__file__).resolve().parent
-DEFAULT_URL = os.getenv("LIFEOS_URL", "http://127.0.0.1:3001")
-AUTO_START = os.getenv("LIFEOS_AUTOSTART", "1") == "1"
+IS_STREAMLIT_CLOUD = str(APP_ROOT).startswith("/mount/src")
+
+
+def resolve_target_url() -> str:
+    env_url = os.getenv("LIFEOS_URL", "").strip()
+    if env_url:
+        return env_url
+    try:
+        secret_url = str(st.secrets.get("LIFEOS_URL", "")).strip()
+        if secret_url:
+            return secret_url
+    except Exception:
+        pass
+    return "http://127.0.0.1:3001"
+
+
+DEFAULT_URL = resolve_target_url()
+AUTO_START = os.getenv("LIFEOS_AUTOSTART", "0" if IS_STREAMLIT_CLOUD else "1") == "1"
 
 
 def url_is_live(url: str, timeout: float = 1.5) -> bool:
@@ -35,12 +52,17 @@ def start_next_dev(url: str) -> bool:
     if parsed.hostname not in {"127.0.0.1", "localhost"}:
         return False
 
+    npm_bin = shutil.which("npm")
+    if not npm_bin:
+        st.session_state["start_error"] = "npm not found in this runtime."
+        return False
+
     existing = st.session_state.get("next_proc")
     if existing is not None and existing.poll() is None:
         return True
 
     cmd = [
-        "npm",
+        npm_bin,
         "run",
         "dev",
         "--workspaces=false",
@@ -51,13 +73,19 @@ def start_next_dev(url: str) -> bool:
         str(port),
     ]
 
-    proc = subprocess.Popen(
-        cmd,
-        cwd=str(APP_ROOT),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT,
-    )
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(APP_ROOT),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+        )
+    except (FileNotFoundError, OSError) as exc:
+        st.session_state["start_error"] = f"Could not start Next.js ({exc})."
+        return False
+
     st.session_state["next_proc"] = proc
+    st.session_state.pop("start_error", None)
 
     def _shutdown() -> None:
         p = st.session_state.get("next_proc")
@@ -74,9 +102,11 @@ st.markdown("## LifeOS")
 st.caption("Interactive operating system for values, habits, decisions, and goals.")
 
 target_url = DEFAULT_URL
+start_error = ""
 
 if AUTO_START and not url_is_live(target_url):
     started = start_next_dev(target_url)
+    start_error = st.session_state.get("start_error", "")
     if started:
         for _ in range(45):
             if url_is_live(target_url):
@@ -100,11 +130,22 @@ with toolbar[2]:
             "If running in Streamlit Cloud, set LIFEOS_URL to a hosted web URL."
         )
 
+if start_error:
+    st.error(start_error)
+
 if is_live:
     components.iframe(target_url, height=1400, scrolling=True)
 else:
-    st.info(
-        "Could not load LifeOS app automatically. "
-        "Start Next.js manually with `npm run dev -- -- -H 127.0.0.1 -p 3001` "
-        "or set `LIFEOS_URL` to a deployed URL."
-    )
+    if IS_STREAMLIT_CLOUD:
+        st.info(
+            "Streamlit Cloud cannot run this Next.js app directly in this wrapper environment. "
+            "Deploy the web app to a public URL (Vercel/Netlify/etc.), then set `LIFEOS_URL` "
+            "in Streamlit app Secrets and redeploy."
+        )
+        st.code('LIFEOS_URL = "https://your-lifeos-web-url.example.com"')
+    else:
+        st.info(
+            "Could not load LifeOS app automatically. "
+            "Start Next.js manually with `npm run dev -- -- -H 127.0.0.1 -p 3001` "
+            "or set `LIFEOS_URL` to a deployed URL."
+        )
