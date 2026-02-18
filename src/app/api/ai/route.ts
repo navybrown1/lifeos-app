@@ -43,7 +43,7 @@ Rules:
 - If asked for a plan, give a numbered list. Otherwise, prose is fine.`;
 
     const result = await streamText({
-      model: google("gemini-2.5-flash-preview-04-17"),
+      model: google("gemini-1.5-flash"),
       system: systemPrompt,
       messages: toModelMessages(messages),
       maxOutputTokens: 512,
