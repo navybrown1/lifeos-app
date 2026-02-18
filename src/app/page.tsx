@@ -1962,7 +1962,7 @@ Processes: ${(state.goals?.processes ?? []).map((p: any) => p.text).join(", ")}
                 </div>
                 <div>
                   <div className="text-sm font-semibold leading-none">AI Coach</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">Powered by GPT-4o mini</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Powered by Gemini 2.5 Flash</div>
                 </div>
               </div>
               {messages.length > 0 && (

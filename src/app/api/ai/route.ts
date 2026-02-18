@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { streamText, convertToModelMessages } from "ai";
 
 export const runtime = "edge";
@@ -21,7 +21,7 @@ Rules:
 - If asked for a plan, give a numbered list. Otherwise, prose is fine.`;
 
   const result = await streamText({
-    model: openai("gpt-4o-mini"),
+    model: google("gemini-2.5-flash-preview-04-17"),
     system: systemPrompt,
     messages: await convertToModelMessages(messages),
     maxOutputTokens: 512,
