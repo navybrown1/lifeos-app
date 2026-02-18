@@ -17,6 +17,7 @@ import streamlit.components.v1 as components
 
 APP_ROOT = Path(__file__).resolve().parent
 IS_STREAMLIT_CLOUD = str(APP_ROOT).startswith("/mount/src")
+DEFAULT_GH_OWNER = os.getenv("LIFEOS_GH_OWNER", "navybrown1").strip()
 
 
 def infer_github_pages_url() -> str:
@@ -40,6 +41,10 @@ def infer_github_pages_url() -> str:
         match = re.search(r"github\.com[:/]([^/]+)/([^/.]+)(?:\.git)?$", remote)
         if match:
             owner, name = match.group(1), match.group(2)
+    if not owner:
+        owner = os.getenv("GITHUB_ACTOR", "").strip() or DEFAULT_GH_OWNER
+    if not name:
+        name = APP_ROOT.name
     if owner and name:
         return f"https://{owner}.github.io/{name}/"
     return ""
