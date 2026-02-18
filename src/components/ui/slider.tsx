@@ -1,5 +1,4 @@
 "use client";
-
 import * as React from "react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { cn } from "@/lib/utils";
@@ -10,13 +9,35 @@ const Slider = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SliderPrimitive.Root
     ref={ref}
-    className={cn("relative flex w-full touch-none select-none items-center", className)}
+    className={cn("relative flex w-full touch-none select-none items-center group py-1", className)}
     {...props}
   >
-    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-muted">
-      <SliderPrimitive.Range className="absolute h-full bg-primary" />
+    <SliderPrimitive.Track
+      className={cn(
+        "relative h-2 w-full grow overflow-hidden rounded-full",
+        "bg-muted/70",
+        "transition-all duration-200 group-hover:h-2.5"
+      )}
+    >
+      <SliderPrimitive.Range
+        className={cn(
+          "absolute h-full rounded-full",
+          "progress-gradient",
+          "shadow-[0_0_6px_hsl(var(--primary)/0.4)]",
+        )}
+      />
     </SliderPrimitive.Track>
-    <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+    <SliderPrimitive.Thumb
+      className={cn(
+        "block h-5 w-5 rounded-full",
+        "border-2 border-primary bg-background",
+        "shadow-[0_2px_8px_hsl(var(--primary)/0.4)]",
+        "ring-offset-background transition-all duration-150",
+        "hover:scale-110 hover:shadow-[0_2px_16px_hsl(var(--primary)/0.6)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        "cursor-grab active:cursor-grabbing",
+      )}
+    />
   </SliderPrimitive.Root>
 ));
 Slider.displayName = SliderPrimitive.Root.displayName;
