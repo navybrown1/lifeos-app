@@ -3,6 +3,7 @@ import { streamText } from "ai";
 
 // Use Node.js runtime so errors surface properly (edge silently drops them)
 export const runtime = "nodejs";
+const TEXT_MODEL = "gemini-2.5-flash-lite";
 
 type IncomingMessage = {
   role: "user" | "assistant";
@@ -43,7 +44,7 @@ Rules:
 - If asked for a plan, give a numbered list. Otherwise, prose is fine.`;
 
     const result = await streamText({
-      model: google("gemini-1.5-flash"),
+      model: google(TEXT_MODEL),
       system: systemPrompt,
       messages: toModelMessages(messages),
       maxOutputTokens: 512,
