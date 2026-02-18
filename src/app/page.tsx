@@ -1891,29 +1891,31 @@ export default function LifeOSApp() {
 // ─── AI Coach Component ─────────────────────────────────────────
 function AICoach({ state, soundEnabled }: { state: any; soundEnabled: boolean }) {
   const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const context = `
+  const context = useMemo(() => `
 Name: ${state.meta?.name ?? "User"}
 Identity: ${state.goals?.identity ?? ""}
 Values: ${(state.values ?? []).map((v: any) => v.label).join(", ")}
 Habits: ${(state.habits ?? []).map((h: any) => h.name).join(", ")}
 One Thing today: ${state.productivity?.oneThing ?? "not set"}
 Processes: ${(state.goals?.processes ?? []).map((p: any) => p.text).join(", ")}
-`.trim();
+`.trim(), [state]);
 
   const transport = useMemo(
     () => new TextStreamChatTransport({ api: "/api/ai", body: { context } }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [context],
   );
 
-  const { messages, input, handleInputChange, handleSubmit, status, setMessages } = useChat({
+  const { messages, sendMessage, status, setMessages } = useChat({
     transport,
     onFinish: () => {
       if (soundEnabled) SFX.success();
     },
   });
+
   const isLoading = status === "streaming" || status === "submitted";
 
   useEffect(() => {
@@ -1921,6 +1923,18 @@ Processes: ${(state.goals?.processes ?? []).map((p: any) => p.text).join(", ")}
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
     }
   }, [messages, open]);
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 120);
+  }, [open]);
+
+  const send = useCallback((text: string) => {
+    const msg = text.trim();
+    if (!msg || isLoading) return;
+    if (soundEnabled) SFX.click();
+    setInput("");
+    sendMessage({ role: "user", content: msg });
+  }, [isLoading, soundEnabled, sendMessage]);
 
   return (
     <>
@@ -1989,13 +2003,7 @@ Processes: ${(state.goals?.processes ?? []).map((p: any) => p.text).join(", ")}
                       <button
                         key={q}
                         className="text-[10px] rounded-full border border-border/70 bg-muted/50 px-2.5 py-1 hover:bg-muted transition-colors"
-                        onClick={() => {
-                          handleInputChange({ target: { value: q } } as any);
-                          setTimeout(() => {
-                            const fakeEvent = { preventDefault: () => {} } as any;
-                            handleSubmit(fakeEvent);
-                          }, 50);
-                        }}
+                        onClick={() => send(q)}
                       >
                         {q}
                       </button>
@@ -2004,21 +2012,27 @@ Processes: ${(state.goals?.processes ?? []).map((p: any) => p.text).join(", ")}
                 </div>
               )}
 
-              {messages.map((m) => (
-                <motion.div
-                  key={m.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-                >
-                  <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold mt-0.5 ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-gradient-to-br from-violet-500 to-indigo-600 text-white"}`}>
-                    {m.role === "user" ? "U" : "AI"}
-                  </div>
-                  <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-muted/70 border border-border/50 rounded-tl-sm"}`}>
-                    {m.content}
-                  </div>
-                </motion.div>
-              ))}
+              {messages.map((m) => {
+                const text = m.parts
+                  ?.filter((p: any) => p.type === "text")
+                  .map((p: any) => p.text)
+                  .join("") ?? (m as any).content ?? "";
+                return (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                  >
+                    <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold mt-0.5 ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-gradient-to-br from-violet-500 to-indigo-600 text-white"}`}>
+                      {m.role === "user" ? "U" : "AI"}
+                    </div>
+                    <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-muted/70 border border-border/50 rounded-tl-sm"}`}>
+                      {text}
+                    </div>
+                  </motion.div>
+                );
+              })}
 
               {isLoading && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2 items-start">
@@ -2041,34 +2055,31 @@ Processes: ${(state.goals?.processes ?? []).map((p: any) => p.text).join(", ")}
             </div>
 
             {/* Input */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!input.trim() || isLoading) return;
-                if (soundEnabled) SFX.click();
-                handleSubmit(e);
-              }}
-              className="flex gap-2 px-3 py-3 border-t border-border/60 bg-muted/30"
-            >
+            <div className="flex gap-2 px-3 py-3 border-t border-border/60 bg-muted/30">
               <Input
+                ref={inputRef}
                 value={input}
-                onChange={handleInputChange}
+                onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask your coach…"
                 disabled={isLoading}
                 className="flex-1 text-sm h-9"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    if (!input.trim() || isLoading) return;
-                    if (soundEnabled) SFX.click();
-                    handleSubmit(e as any);
+                    send(input);
                   }
                 }}
               />
-              <Button type="submit" size="sm" variant="glow" disabled={isLoading || !input.trim()} className="h-9 px-3">
+              <Button
+                size="sm"
+                variant="glow"
+                disabled={isLoading || !input.trim()}
+                className="h-9 px-3"
+                onClick={() => send(input)}
+              >
                 <Send className="h-3.5 w-3.5" />
               </Button>
-            </form>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
