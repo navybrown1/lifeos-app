@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -18,6 +19,32 @@ APP_ROOT = Path(__file__).resolve().parent
 IS_STREAMLIT_CLOUD = str(APP_ROOT).startswith("/mount/src")
 
 
+def infer_github_pages_url() -> str:
+    repo = os.getenv("GITHUB_REPOSITORY", "").strip()
+    owner = ""
+    name = ""
+    if repo and "/" in repo:
+        owner, name = repo.split("/", 1)
+    if not owner or not name:
+        try:
+            remote = (
+                subprocess.check_output(
+                    ["git", "config", "--get", "remote.origin.url"],
+                    cwd=str(APP_ROOT),
+                    text=True,
+                )
+                .strip()
+            )
+        except Exception:
+            remote = ""
+        match = re.search(r"github\.com[:/]([^/]+)/([^/.]+)(?:\.git)?$", remote)
+        if match:
+            owner, name = match.group(1), match.group(2)
+    if owner and name:
+        return f"https://{owner}.github.io/{name}/"
+    return ""
+
+
 def resolve_target_url() -> str:
     env_url = os.getenv("LIFEOS_URL", "").strip()
     if env_url:
@@ -28,6 +55,10 @@ def resolve_target_url() -> str:
             return secret_url
     except Exception:
         pass
+    if IS_STREAMLIT_CLOUD:
+        pages_url = infer_github_pages_url()
+        if pages_url:
+            return pages_url
     return "http://127.0.0.1:3001"
 
 
