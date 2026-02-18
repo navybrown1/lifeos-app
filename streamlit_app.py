@@ -18,6 +18,10 @@ import streamlit.components.v1 as components
 APP_ROOT = Path(__file__).resolve().parent
 IS_STREAMLIT_CLOUD = str(APP_ROOT).startswith("/mount/src")
 DEFAULT_GH_OWNER = os.getenv("LIFEOS_GH_OWNER", "navybrown1").strip()
+DEFAULT_VERCEL_URL = os.getenv(
+    "LIFEOS_VERCEL_URL",
+    "https://document-intelligence-app.vercel.app",
+).strip()
 
 
 def infer_github_pages_url() -> str:
@@ -60,6 +64,8 @@ def resolve_target_url() -> str:
             return secret_url
     except Exception:
         pass
+    if IS_STREAMLIT_CLOUD and DEFAULT_VERCEL_URL:
+        return DEFAULT_VERCEL_URL
     if IS_STREAMLIT_CLOUD:
         pages_url = infer_github_pages_url()
         if pages_url:
